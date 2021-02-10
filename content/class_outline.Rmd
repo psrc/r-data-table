@@ -1,0 +1,314 @@
+---
+title: "Class Outline"
+output: 
+    html_document:
+        theme: readable
+        toc: true
+        toc_depth: 5
+        toc_float: true
+        css: styles.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(datatable.print.nrows = 10)
+options(datatable.print.trunc.cols = TRUE)
+cond.eval <- TRUE
+show.results <- cond.eval
+```
+
+
+<div class='float-image-right'>
+![](../images/data_table_syntax2.png)
+  
+    
+</div>
+
+
+There are at least five good reasons to learn **data.table**:
+
+1. Concise syntax
+2. Operations are insanely fast and
+3. Memory efficient
+4. Package is feature rich and
+5. Dependency free
+
+Regarding efficiency, it has been shown that **data.table** can be 75x faster than **dplyr**. [Here is a comparison with other systems](https://h2oai.github.io/db-benchmark). We will talk about some of the reasons later in the class. 
+
+# The data.table object
+
+Let's start our session by loading the library. Uncomment the second line and set the working directory where your data for this session is located (don't forget to use forward slashes, e.g. "C:/Users/hana/Documents"):
+
+```{r}
+library(data.table)
+#setwd("/Users/hana/psrc/rworkshops2020/data.table")
+```
+
+
+To use **data.table** features, we need to create a `data.table` object, which is an enhanced version of `data.frame`. There are several ways to do it:
+
+1. Create it from scratch:
+    ```{r}
+d <- data.table(x = 1:10, y = letters[1:10])
+d
+```
+
+2. Convert existing `data.frame`:
+    ```{r}
+df <- data.frame(x = 1:10, y = letters[1:10])
+d <- as.data.table(df)
+d
+```
+    One can do such conversion also on a `tibble` object and thus, it allows to easily switch between **dplyr** and **data.table**. To switch back from **data.table** to **dplyr**, use the `as_tibble()` function.
+
+3. Coercion by reference, i.e. no need to reassign an object:
+    ```{r}
+dft <- data.frame(x = 1:10, y = letters[1:10])
+class(dft)
+setDT(dft)
+class(dft)
+```
+    The class of `dft` changed without a re-assignment, thus saving memory. To reverse the operation to make `dft` being `data.frame` again, use the `setDF()` function.
+
+4. **Reading from file (extremely fast!):**
+    ```{r}
+dt <- fread("ofm_april1_population_final.csv")    
+```
+    For reading from Excel spreadsheets, one can use the `read.xlsx()` function from the **openxlsx** library (as shown in the Rmarkdown class) and then convert to `data.table` via `as.data.table()` as shown above. However, for big datasets the `fread()` function is superior to anything else in R. Reading in the PSRC's parcels dataset (1.3 million rows, 285M) is 13x faster than with `read.csv()`.
+    ```{r}
+class(dt)
+```
+
+    ```{r, eval = FALSE}
+str(dt)
+View(dt)
+```
+
+# About data.table syntax
+
+The picture at the top of the page shows the basic syntax of all `data.table`s. While **tidyverse** tends to break up operations step-by-step using verbs for each step, **data.table** aims to do
+everything in one concise expression.
+
+# Working with rows: DT[i,]
+## Selecting rows
+
+When subsetting by rows, things work similary like in `data.frame`, except the syntax is simpler. As an example, select rows from `dt` that are in King county and are not cities:
+
+```{r, eval = cond.eval}
+dt[County == "King" & Filter < 4]
+```
+
+Or select all cities that have the word "Wood" in their name:
+```{r, eval = cond.eval}
+dt[grepl("Wood", Jurisdiction)]
+```
+
+Indices work too. Also notice that the comma is optional if no `j` and `by` is used.
+```{r, eval = cond.eval}
+dt[1:3] # is equivalent to
+dt[1:3,]
+```
+
+For further processing, we select rows that correspond to cities in the PSRC's four counties:
+
+```{r}
+dt4c <- dt[Filter == 4 & County %chin% c("King", "Kitsap", "Pierce", "Snohomish")] 
+dim(dt4c)
+```
+The `%chin%` operator is like `%in%` but optimized for speed and is for character vectors only. 
+
+
+## Ordering rows
+
+The `i` dimension is also used for putting rows into specific order. Here, ordering by Jurisdiction:
+
+```{r, eval = cond.eval}
+dt4c[order(Jurisdiction)]
+```
+
+
+Ordering by reference (in place) implements optimized ordering:
+```{r, eval = cond.eval}
+setorder(dt4c, County, Jurisdiction)
+```
+
+# What does "by reference" mean?
+
+Base R assigns objects **by value**, i.e. when an object is assigned, a copy of the original object is created, i.e. the value occupies a different address in the memory. Python, C, Java and other programming languages work this way.
+
+Assignment **by reference** (or "in place") differs as it does not create a separate copy; it rather references the original object, i.e. it points to the same address in the memory. In addition to **data.table**, C++ or Python pandas support this as well. It is well suited for working with big data as it is more memory efficient, but one has to be careful not to overwrite the original object. 
+
+```{r,  fig.cap = " ", fig.align='center', fig.show='hold', out.width="49%", echo=FALSE, eval = TRUE}
+knitr::include_graphics(c( '../images/byvalue.png', '../images/byreference2.png'))
+```
+
+# Working with columns: DT[,j]
+
+## Renaming columns
+
+The column names of our dataset are not very pretty, so let's change it. 
+```{r}
+colnames(dt4c)
+```
+There are at least two ways to rename columns:
+
+1. By reference: (we replace Jurisdiction by City)
+    ```{r}
+setnames(dt4c, "Jurisdiction", "City")
+```
+    Note that both, the second and third arguments can include more than one name, if renaming of multiple columns is desired.
+2. Using `colnames()` as with `data.frame`: (we extract the first four characters from the time columns)
+    ```{r}
+colnames(dt4c)[5:ncol(dt4c)] <- substr(colnames(dt4c)[5:ncol(dt4c)], 1, 4)
+colnames(dt4c)
+```
+
+## Selecting columns
+
+Columns can be selected in various ways. The most common case is probably a selection by column names:
+
+```{r, eval = cond.eval}
+dt4c[, .(County, City)]
+```
+
+Selection by an index still works:
+
+```{r}
+dt4c[1:10, 1:5]
+```
+
+Names can also be used in the same way as indices. Use backquotes if the column name starts with a number:
+```{r}
+dt4c[1:5, Filter:City]
+dt4c[1:5, Filter:`2014`]
+```
+
+The `.()` is a synonym for `list()`:
+```{r}
+dt4c[1:5, list(County, City)]
+```
+
+Or use the same way as in `data.frame`, using the `c()` function:
+```{r}
+dt4c[1:5, c("County", "City")]
+```
+However, if you assign column names to an object, say `cols`, then `dt4c[, cols]` will not work. Instead use 
+```{r, results=show.results}
+cols <- c("County", "City")
+dt4c[, ..cols] # or
+dt4c[, cols, with = FALSE]
+```
+
+Negation can be used to exclude columns. Here, select all columns except the ones given:
+```{r}
+dt4c <- dt4c[, !c("Line", "Filter")]
+dim(dt4c)
+```
+
+## Assigning values to columns
+
+### The `:=` operator
+Assignments to columns is done via `:=` which assigns by reference:
+```{r, results = show.results}
+dt4c[, id := 1:nrow(dt4c)]
+dt4c[, id := id + 5000]
+```
+
+Be aware of the implications of assigning by reference. Here is an example:
+```{r}
+d                 # d is our toy data.table
+a <- d            # assign d to a
+a[ , x := NULL][] # delete column in a
+d                 # d changed as well!
+```
+
+Here is the right way to do it using the `copy()` function:
+```{r}
+d <- data.table(x = 1:10, y = letters[1:10]) # re-create d
+a <- copy(d)      # use the copy() function to create a separate object
+a[ , x := NULL][] # delete column in a
+d                 # d is not impacted
+```
+
+Note that in the above example I used `[]` at the end of lines to print out the values of the object. They are not needed tfor the actual assignment.
+
+### Partial assignment
+
+You do not have to assign values to all rows - a partial assignment can be done with the help of the `i` dimension. Say we want to increase the `id` column by 1000 but only for King county:
+
+```{r}
+dt4c[County == "King", id := id + 1000]
+dt4c[1:4, .(County, City, id)]
+dt4c[50:53, .(County, City, id)]
+```
+
+If the column does not exist, a partial assignment fills in `NA`s:
+```{r}
+d[x < 5, z := TRUE][]
+```
+
+Let's now delete the `id` column:
+```{r}
+dt4c[, id := NULL]
+```
+
+
+### Multiple things at once
+
+One can **assign multiple columns** in one command. Here we add two columns (`u` and `v`) and delete one column (`z`) in one go:
+
+```{r}
+d[ , ':='(u = x^2, v = x^3, z = NULL)]
+```
+
+We can also **chain multiple operations** into one line. Here we first add a column `w`, then we add a column `dummy` via a partial assignment, then we order the rows: 
+```{r}
+d[, w := -4:5][w > 0, dummy := TRUE][order(x, decreasing = TRUE)]
+```
+Note that the first two operations are by reference, i.e. the `d` object is changed. The last operation does not change the object, unless we would re-assign it to `d`.
+
+To assign multiple categories to one variable, there is a new function called `fcase()` which is inspired by `CASE WHEN` in SQL, and it is optimized for speed. For example.
+
+```{r}
+d[, category := fcase(w > 0, "positive", 
+                      w %between% c(-2, 0), "slightly negative",
+                      w < -2, "negative")]
+```
+Similarly to `%chin%`, the `%between%` operator is **data.table** specific.
+
+Finally, an assignment can be also used to rename columns:
+```{r}
+d[, dummy_new := dummy][, dummy := NULL][]
+```
+
+## Subsetting with .SD
+
+`.SD` (**S**ubsetting **D**ata) is a very powerful operator in **data.table**. It allows to perform a given function on any subset of columns. 
+
+To demonstrate it, as part of our cleaning of `dt4c` we will convert all time-related columns into the numeric type. We could do it column by column as
+
+```{r}
+dt4c[, `2010` := as.numeric(`2010`)]
+```
+
+That would be a little tedious to do it for many columns. Thus, we use the `.SD` symbol to apply the `as.numeric` function to the 2010-2019 columns at once: 
+```{r}
+cols <- as.character(2010:2019) # column names to apply the conversion to
+dt4c[, (cols) := lapply(.SD, as.numeric), .SDcols = cols] 
+str(dt4c)
+```
+The `lapply()` function is a standard base R function that applies the given function (here `as.numeric`) to a list or a dataset (given by the first argument), element by element, or columnn by column. In the **data.table** context, the `.SD` symbol is replaced by a dataset composed by the columns given by `.SDcols`. Thus, the function `as.numeric` is applied to all columns defined in the `cols` object, and the result is then assigned to columns of the same names.
+
+The `.SD` symbol is often used in aggreagations, and we will see an example of it in the next section.
+
+# Group by: DT[,,by]
+
+## Simple aggregations
+
+The most simple aggregations are done by applying an aggregating functions to columns. For example,
+
+```{r}
+dt4c[, sum(`2019`)]
+dt4c[, mean(`2019`)]
+```
+

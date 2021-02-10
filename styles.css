@@ -1,0 +1,5 @@
+.one-edge-shadow {
+    -webkit-box-shadow: 0 10px 6px -6px rgb(128,128,128, .3);
+       -moz-box-shadow: 0 10px 6px -6px rgb(128,128,128, .3);
+            box-shadow: 0 10px 6px -6px rgb(128,128,128, .3)y;
+}
