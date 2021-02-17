@@ -1,0 +1,61 @@
+---
+title: "Homework"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+We will create a table of growth rate and plot all cities in Washington on a map, using the Google Visualization API. To get there, please install the **googleVis** package and then follow the steps below:
+
+1. Re-create the `dt` object from the class by reading in the OFM data. It contains population for all cities in WA.
+
+    ```{r eval = FALSE}
+dt <- fread("ofm_april1_population_final.csv")
+```
+
+2. Extract the columns with city name (Jurisdiction) and the column with 2018 and 2019 population. Store the object in `mypop`. Rename the 2018 column to PopBase and the 2019 column to "Pop".
+
+3. Convert the PopBase and Pop into numeric type.
+
+4. Create a column Growth as (Pop - PopBase)/PopBase * 100 rounded to 2 decimals.
+
+5. Add a column Rank that ranks cities by Growth in decreasing order. Hint: Use the `frank()` function. Ranking in decreasing order can be achieved by passing negative values of the original column.
+
+6. Add a column State_share computed as the share of Pop within the state.
+
+7. Add a column County_share computed as the share of Pop within its county. Hint: You need to compute sum(Pop) by counties first, assign it as an additional column to `mypo`, and then divide Pop by that.
+
+8. Create a column "City" which takes values of "Jurisdiction" but removes any text containing " (part)". Hint: For replacing text use the function `gsub(" (part)", "", Jurisdiction, fixed = TRUE)` on the `j` dimension (just assign that call to `City`).
+
+9. Create a google table by 
+
+    ```{r eval = FALSE}
+library(googleVis)
+gtbl <- gvisTable(mypop[, .(Rank, County, City, Growth, PopBase, Pop, County_share, State_share)])
+plot(gtbl)
+```
+
+10. The file "citycenters.csv" provided with the class data contains the latitude and longitude of cities in WA, which we will need for the map. Read the file into R using `fread` and store it in the object `cc`.
+
+11. Rename the column "NAME" in the `cc` dataset to "City".
+
+12. Join the datasets `mypop` and `cc` on the "City" column, so that columns "lat" and "long" appear as a new character column (called "latlong") of `mypop` in the form lat:long. Hint: Use the `paste` function to combine "lat" and "long" with `sep=":"`. In the joining command, don't forget to use the prefix `i.` for those two columns. 
+
+13. Can you extract records where there was no match? Hint: the "latlong" column is NA for those records. Remove those records from `mypop`.
+
+14. Create a column "Tip" constructed as `paste0(City, ": ", Pop, ", Gr: ", Growth)`.
+
+15. Plot points on a map using:
+    ```{r eval = FALSE}
+plot(gvisMap(mypop, "latlong", "City", tipvar = "Tip", options = list(height = 800, width = 800)))
+```
+
+16. To combine a geo chart with a table on one page, you can use the following code:
+    ```{r eval = FALSE}
+gchart <- gvisGeoChart(mypop, "latlong", hovervar = "Tip", colorvar = "Pop", 
+            options = list(region="US-WA", resolution = "metros", 
+                           height = 800, width = 800))
+plot(gvisMerge(gchart, gtbl))
+```

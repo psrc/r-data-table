@@ -13,10 +13,10 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 options(datatable.print.nrows = 10)
 options(datatable.print.trunc.cols = TRUE)
-cond.eval <- TRUE
-show.results <- cond.eval
+show.results <- FALSE
 ```
 
+# Motivation
 
 <div class='float-image-right'>
 ![](../images/data_table_syntax2.png)
@@ -35,7 +35,9 @@ There are at least five good reasons to learn **data.table**:
 
 Regarding efficiency, it has been shown that **data.table** can be 75x faster than **dplyr**. [Here is a comparison with other systems](https://h2oai.github.io/db-benchmark). We will talk about some of the reasons later in the class. 
 
-# The data.table object
+It is not the purpose of this class to convince you that data.table is superior to dplyr or vice versa. It is to show you another powerful tool that you can use to tackle big or small data problems efficiently in R. One can use the two packages to complement each other. If you end up liking the dplyr syntax more but want to efficiency advantage, consider using the **dtplyr** package. It uses dplyr syntax while working with data.table objects.
+
+# Creating data.table object
 
 Let's start our session by loading the library. Uncomment the second line and set the working directory where your data for this session is located (don't forget to use forward slashes, e.g. "C:/Users/hana/Documents"):
 
@@ -72,12 +74,14 @@ class(dft)
 
 4. **Reading from file (extremely fast!):**
     ```{r}
-dt <- fread("ofm_april1_population_final.csv")    
-```
-    For reading from Excel spreadsheets, one can use the `read.xlsx()` function from the **openxlsx** library (as shown in the Rmarkdown class) and then convert to `data.table` via `as.data.table()` as shown above. However, for big datasets the `fread()` function is superior to anything else in R. Reading in the PSRC's parcels dataset (1.3 million rows, 285M) is 13x faster than with `read.csv()`.
-    ```{r}
+dt <- fread("ofm_april1_population_final.csv")
 class(dt)
 ```
+    For reading from Excel spreadsheets, one can use the `read.xlsx()` function from the **openxlsx** library (as shown in the Rmarkdown class) and then convert to `data.table` via `as.data.table()` as shown above. However, for big datasets the `fread()` function is superior to anything else in R. Reading in the PSRC's parcels dataset (1.3 million rows, 285M) is 13x faster than with `read.csv()`.
+    
+    The equivalent to `fread()` for writing data into a file is `fwrite()`. It's is also amazingly fast.
+    
+    Now let's explore the dataset structure.
 
     ```{r, eval = FALSE}
 str(dt)
@@ -94,17 +98,17 @@ everything in one concise expression.
 
 When subsetting by rows, things work similary like in `data.frame`, except the syntax is simpler. As an example, select rows from `dt` that are in King county and are not cities:
 
-```{r, eval = cond.eval}
+```{r, results = show.results}
 dt[County == "King" & Filter < 4]
 ```
 
 Or select all cities that have the word "Wood" in their name:
-```{r, eval = cond.eval}
+```{r, results = show.results}
 dt[grepl("Wood", Jurisdiction)]
 ```
 
 Indices work too. Also notice that the comma is optional if no `j` and `by` is used.
-```{r, eval = cond.eval}
+```{r, results = show.results}
 dt[1:3] # is equivalent to
 dt[1:3,]
 ```
@@ -122,13 +126,13 @@ The `%chin%` operator is like `%in%` but optimized for speed and is for characte
 
 The `i` dimension is also used for putting rows into specific order. Here, ordering by Jurisdiction:
 
-```{r, eval = cond.eval}
+```{r}
 dt4c[order(Jurisdiction)]
 ```
 
 
 Ordering by reference (in place) implements optimized ordering:
-```{r, eval = cond.eval}
+```{r}
 setorder(dt4c, County, Jurisdiction)
 ```
 
@@ -167,7 +171,7 @@ colnames(dt4c)
 
 Columns can be selected in various ways. The most common case is probably a selection by column names:
 
-```{r, eval = cond.eval}
+```{r}
 dt4c[, .(County, City)]
 ```
 
@@ -193,7 +197,7 @@ Or use the same way as in `data.frame`, using the `c()` function:
 dt4c[1:5, c("County", "City")]
 ```
 However, if you assign column names to an object, say `cols`, then `dt4c[, cols]` will not work. Instead use 
-```{r, results=show.results}
+```{r, results = show.results}
 cols <- c("County", "City")
 dt4c[, ..cols] # or
 dt4c[, cols, with = FALSE]
@@ -280,6 +284,7 @@ Finally, an assignment can be also used to rename columns:
 ```{r}
 d[, dummy_new := dummy][, dummy := NULL][]
 ```
+This way of renaming columns changes the order of the columns. You can use the function `setcolorder()` to reorder columns in place.
 
 ## Subsetting with .SD
 
@@ -297,7 +302,7 @@ cols <- as.character(2010:2019) # column names to apply the conversion to
 dt4c[, (cols) := lapply(.SD, as.numeric), .SDcols = cols] 
 str(dt4c)
 ```
-The `lapply()` function is a standard base R function that applies the given function (here `as.numeric`) to a list or a dataset (given by the first argument), element by element, or columnn by column. In the **data.table** context, the `.SD` symbol is replaced by a dataset composed by the columns given by `.SDcols`. Thus, the function `as.numeric` is applied to all columns defined in the `cols` object, and the result is then assigned to columns of the same names.
+The `lapply()` function is a standard base R function that applies the given function (here `as.numeric`) to a list or a dataset (given by the first argument), element by element, or columnn by column. In the **data.table** context, the `.SD` symbol is replaced by a dataset composed by the columns given by `.SDcols`. Thus, the function `as.numeric` is applied to all columns defined in the `cols` object, and the result is then assigned to columns given by left side of `:=`, which here have the same names.
 
 The `.SD` symbol is often used in aggreagations, and we will see an example of it in the next section.
 
@@ -312,3 +317,161 @@ dt4c[, sum(`2019`)]
 dt4c[, mean(`2019`)]
 ```
 
+For counts use the special symbol `.N`:
+
+```{r}
+dt4c[, .N]
+```
+
+## Group by
+
+Things get more interesting when we aggregate by groups. Here summing by a column, by a conditional expression and by multiple expressions. If you want to name the aggregated column, use `.()` on the `j` dimension:
+```{r}
+dt4c[, sum(`2019`), by = County]
+dt4c[, .(Population = sum(`2019`)), by = County]
+dt4c[, .(Population = sum(`2019`)), by = `2019` > 100000]
+dt4c[, .(Population = sum(`2019`), Count = .N), by = `2019` > 100000]
+dt4c[, .(Population = sum(`2019`), Count = .N), by = .(County, `2019` > 100000)]
+```
+
+The above commands do not change the `dt4c` dataset. To add an aggregated column to the dataset, use the `:=` symbol:
+
+```{r}
+dt4c[, county_sum := sum(`2019`), by = County]
+```
+
+Now one can use the aggregated column to compute county shares. If it was done correctly, the sum of shares by county should yield 1.
+```{r}
+dt4c[, county_share := round(`2019`/county_sum*100, 2)]
+dt4c[, sum(county_share), by = County] 
+```
+
+## Using `.SD`
+
+The power of the `.SD` feature shows especially in aggregations. It allows to easily aggregate for multiple columns. Here we sum all columns from 2010 to 2019 (alternatively, we could use our object `cols` created earlier):
+
+```{r}
+dt4c[, lapply(.SD, sum), by = County, .SDcols = `2010`:`2019`]
+```
+
+# Joining datasets
+
+To demonstrate how to join datasets, let's read in the dataset of counties provided with the class:
+```{r}
+counties <- fread("counties.csv")
+```
+
+We now merge this dataset with our `dt4c`. The joining columns are `County` for `dt4c` and `county_name` for dataset `counties`. There are two ways of doing the join. 
+
+## The merge function
+
+The first one is using the `merge()` function:
+
+```{r}
+dt4cm <- merge(dt4c, counties, by.x = "County", by.y = "county_name")
+```
+Note that if the joining columns would be the same, just use the argument `by`.
+
+## Join via the `i` dimension and setting keys
+
+The second way of doing the join is using the first (`i`) dimension. For this example we first create another  county dataset by aggregating `dt4c` and renaming the `County` column to be `county_name`, chaining the operations one after another: 
+
+```{r}
+popcty <- dt4c[ , .(Pop = sum(`2019`)), by = County][, county_name := County][, County := NULL]
+```
+
+The left and right joins can be done via
+```{r}
+popcty[counties, , on = .(county_name)] # left join
+counties[popcty, , on = .(county_name)] # right join
+```
+
+Setting a key can significantly decrease the runtime. For example, merging the PSRC's parcels with the buildings dataset was 16x faster than when merging using base R.
+
+```{r}
+setkey(popcty, "county_name")
+setkey(counties, "county_name")
+```
+
+When a key is set, the `on` argument can be omitted:
+```{r}
+counties[popcty]
+```
+
+To explicitely use columns from the left dataset, use the prefix `i.`. Below, the `Pop` column is from the dataset `popcty`, therefore it is used as `i.Pop`, while the column `acres` is from `counties` and therefore does not have any prefix.
+```{r}
+counties[popcty, .(county_name, density = i.Pop/acres)]
+```
+
+We now add the density column to the `counties` dataset:
+```{r}
+counties[popcty, density := i.Pop/acres][]
+```
+
+Notice that by default we are doing an outer join:
+```{r}
+popcty[county_name != "King"][counties]
+```
+To do an inner join, use
+```{r}
+popcty[county_name != "King"][counties, nomatch = NULL]
+```
+One can also do a join that would give records not in common:
+```{r}
+counties[!popcty[county_name != "King"]] 
+```
+
+
+# Reshaping data
+
+The format of the data we've been working so far is often called *wide*. It is a typical data format of demographic datasets.
+```{r}
+head(dt4c)
+```
+
+Let's remove columns that we will not need anymore.
+```{r, results = show.results}
+dt4c[, ':='(county_sum = NULL, county_share = NULL)]
+```
+
+## Wide to long
+Various packages, including **ggplot2** require the data to be in the so called *long* format (or *tidy*) where each value (here population) is its own record, i.e. each value occupies one row. To convert from wide to long, use the `melt()` function. In our example, we need to specify that `County` and `City` are non-population columns:
+
+```{r}
+dtl <- melt(dt4c, id.vars = c("County", "City"))
+head(dtl)
+```
+
+To name the variable and value  columns explicitely, use the following arguments:
+
+```{r}
+dtl <- melt(dt4c, id.vars = c("County", "City"), variable.name = "Year", value.name = "Population")
+head(dtl)
+```
+
+Now this dataset can be plugged directly into `ggplot`:
+```{r}
+library(ggplot2)
+g <- ggplot(dtl[County == "Pierce"]) + 
+      geom_col(aes(x = City, y = Population, fill = as.factor(Year)),
+               position = "dodge") + coord_flip() + labs(fill = "Year")
+print(g)
+```
+
+## Long to wide
+If you have a dataset in the long format and need to convert it to the wide format, for example for reporting purposes, use the `dcast()` function. Its second argument is a formula (`LHS ~ RHS`) that determines which columns stay (RHS) and which columns are cast (LHS). `...` represents all remaining variables:
+
+```{r}
+dtw <- dcast(dtl, County + City ~ Year, value.var = "Population")
+dtw <- dcast(dtl, ... ~ Year, value.var = "Population")
+head(dtw)
+```
+
+# Export dataset
+As mentioned previously, the most efficient way to export data is using the `fwrite()` function:
+
+```{r eval = FALSE}
+fwrite(dtw, "my_ofm.csv")
+```
+
+See `?fwrite` for more options.
