@@ -7,7 +7,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-We will create a table of growth rate and plot all cities in Washington on a map, using the Google Visualization API. To get there, please install the **googleVis** package and then follow the steps below:
+We will create a table of growth rate and plot all cities in Washington on a map, using the [Google Visualization API](https://developers.google.com/chart/interactive/docs/gallery). To get there, please install the **googleVis** package and then follow the steps below:
 
 1. Re-create the `dt` object from the class by reading in the OFM data. It contains population for all cities in WA.
 
@@ -15,21 +15,21 @@ We will create a table of growth rate and plot all cities in Washington on a map
 dt <- fread("ofm_april1_population_final.csv")
 ```
 
-2. Extract the columns with city name (Jurisdiction) and the column with 2018 and 2019 population. Store the object in `mypop`. Rename the 2018 column to PopBase and the 2019 column to "Pop".
+2. Extract all valid city records (i.e. where Filter is 4) and 3 columns, namely Jurisdiction and the two columns containing the 2018 and 2019 population. Store the object in `mypop`. Rename the 2018 column to PopBase and the 2019 column to "Pop".
 
-3. Convert the PopBase and Pop into numeric type.
+3. Convert the PopBase and Pop columns into numeric type.
 
 4. Create a column Growth as (Pop - PopBase)/PopBase * 100 rounded to 2 decimals.
 
-5. Add a column Rank that ranks cities by Growth in decreasing order. Hint: Use the `frank()` function. Ranking in decreasing order can be achieved by passing negative values of the original column.
+5. Add a column Rank that ranks cities by Growth in decreasing order. Hint: Use the `frank()` function. Ranking in decreasing order can be achieved by passing negative values of the original column, here `Growth`.
 
 6. Add a column State_share computed as the share of Pop within the state.
 
-7. Add a column County_share computed as the share of Pop within its county. Hint: You need to compute sum(Pop) by counties first, assign it as an additional column to `mypo`, and then divide Pop by that.
+7. Add a column County_share computed as the share of Pop within its county. Hint: You need to compute sum(Pop) by counties first, assign it as an additional column to `mypop`, and then divide Pop by that.
 
 8. Create a column "City" which takes values of "Jurisdiction" but removes any text containing " (part)". Hint: For replacing text use the function `gsub(" (part)", "", Jurisdiction, fixed = TRUE)` on the `j` dimension (just assign that call to `City`).
 
-9. Create a google table by 
+9. Create an interactive (sortable) table by 
 
     ```{r eval = FALSE}
 library(googleVis)
@@ -37,7 +37,7 @@ gtbl <- gvisTable(mypop[, .(Rank, County, City, Growth, PopBase, Pop, County_sha
 plot(gtbl)
 ```
 
-10. The file "citycenters.csv" provided with the class data contains the latitude and longitude of cities in WA, which we will need for the map. Read the file into R using `fread` and store it in the object `cc`.
+10. The file "citycenters.csv" provided with the class data contains the latitude and longitude of cities in WA, which we will need for the map. Read the file into R using `fread` and store it in an object called `cc`.
 
 11. Rename the column "NAME" in the `cc` dataset to "City".
 
@@ -45,14 +45,14 @@ plot(gtbl)
 
 13. Can you extract records where there was no match? Hint: the "latlong" column is NA for those records. Remove those records from `mypop`.
 
-14. Create a column "Tip" constructed as `paste0(City, ": ", Pop, ", Gr: ", Growth)`.
+14. Now we neeed to create a column with the info that will be displayed when clicking on the city icons. Say we want to see the city name, population and growth. Thus, create a column "Tip" constructed as `paste0(City, ": ", Pop, ", Gr: ", Growth)`.
 
-15. Plot points on a map using:
+15. Plot points on a google map using:
     ```{r eval = FALSE}
 plot(gvisMap(mypop, "latlong", "City", tipvar = "Tip", options = list(height = 800, width = 800)))
 ```
 
-16. To combine a geo chart with a table on one page, you can use the following code:
+16. Another type of google chart is a Geo Chart. To combine such geo chart with the table created previously on one page, you can use the following code:
     ```{r eval = FALSE}
 gchart <- gvisGeoChart(mypop, "latlong", hovervar = "Tip", colorvar = "Pop", 
             options = list(region="US-WA", resolution = "metros", 

@@ -24,8 +24,8 @@ show.results <- FALSE
     
 </div>
 
-
-There are at least five good reasons to learn **data.table**:
+The authors of the **data.table** package are Matt Dowle and Arun Srinivasan. 
+There are at least five good reasons to learn the package:
 
 1. Concise syntax
 2. Operations are insanely fast and
@@ -468,7 +468,7 @@ head(dtw)
 ```
 
 # Export dataset
-As mentioned previously, the most efficient way to export data is using the `fwrite()` function:
+As mentioned previously, the counterpart of the reading function `fread()` is the function `fwrite()`. It is the most efficient way to export data. Let's write out our `dtw` dataset:
 
 ```{r eval = FALSE}
 fwrite(dtw, "my_ofm.csv")
