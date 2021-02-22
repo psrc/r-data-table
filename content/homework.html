@@ -366,29 +366,29 @@ summary {
 </div>
 
 
-<p>We will create a table of growth rate and plot all cities in Washington on a map, using the Google Visualization API. To get there, please install the <strong>googleVis</strong> package and then follow the steps below:</p>
+<p>We will create a table of growth rate and plot all cities in Washington on a map, using the <a href="https://developers.google.com/chart/interactive/docs/gallery">Google Visualization API</a>. To get there, please install the <strong>googleVis</strong> package and then follow the steps below:</p>
 <ol style="list-style-type: decimal">
 <li><p>Re-create the <code>dt</code> object from the class by reading in the OFM data. It contains population for all cities in WA.</p>
 <pre class="r"><code>dt &lt;- fread(&quot;ofm_april1_population_final.csv&quot;)</code></pre></li>
-<li><p>Extract the columns with city name (Jurisdiction) and the column with 2018 and 2019 population. Store the object in <code>mypop</code>. Rename the 2018 column to PopBase and the 2019 column to “Pop”.</p></li>
-<li><p>Convert the PopBase and Pop into numeric type.</p></li>
+<li><p>Extract all valid city records (i.e. where Filter is 4) and 3 columns, namely Jurisdiction and the two columns containing the 2018 and 2019 population. Store the object in <code>mypop</code>. Rename the 2018 column to PopBase and the 2019 column to “Pop”.</p></li>
+<li><p>Convert the PopBase and Pop columns into numeric type.</p></li>
 <li><p>Create a column Growth as (Pop - PopBase)/PopBase * 100 rounded to 2 decimals.</p></li>
-<li><p>Add a column Rank that ranks cities by Growth in decreasing order. Hint: Use the <code>frank()</code> function. Ranking in decreasing order can be achieved by passing negative values of the original column.</p></li>
+<li><p>Add a column Rank that ranks cities by Growth in decreasing order. Hint: Use the <code>frank()</code> function. Ranking in decreasing order can be achieved by passing negative values of the original column, here <code>Growth</code>.</p></li>
 <li><p>Add a column State_share computed as the share of Pop within the state.</p></li>
-<li><p>Add a column County_share computed as the share of Pop within its county. Hint: You need to compute sum(Pop) by counties first, assign it as an additional column to <code>mypo</code>, and then divide Pop by that.</p></li>
+<li><p>Add a column County_share computed as the share of Pop within its county. Hint: You need to compute sum(Pop) by counties first, assign it as an additional column to <code>mypop</code>, and then divide Pop by that.</p></li>
 <li><p>Create a column “City” which takes values of “Jurisdiction” but removes any text containing &quot; (part)&quot;. Hint: For replacing text use the function <code>gsub(&quot; (part)&quot;, &quot;&quot;, Jurisdiction, fixed = TRUE)</code> on the <code>j</code> dimension (just assign that call to <code>City</code>).</p></li>
-<li><p>Create a google table by</p>
+<li><p>Create an interactive (sortable) table by</p>
 <pre class="r"><code>library(googleVis)
 gtbl &lt;- gvisTable(mypop[, .(Rank, County, City, Growth, PopBase, Pop, County_share, State_share)])
 plot(gtbl)</code></pre></li>
-<li><p>The file “citycenters.csv” provided with the class data contains the latitude and longitude of cities in WA, which we will need for the map. Read the file into R using <code>fread</code> and store it in the object <code>cc</code>.</p></li>
+<li><p>The file “citycenters.csv” provided with the class data contains the latitude and longitude of cities in WA, which we will need for the map. Read the file into R using <code>fread</code> and store it in an object called <code>cc</code>.</p></li>
 <li><p>Rename the column “NAME” in the <code>cc</code> dataset to “City”.</p></li>
 <li><p>Join the datasets <code>mypop</code> and <code>cc</code> on the “City” column, so that columns “lat” and “long” appear as a new character column (called “latlong”) of <code>mypop</code> in the form lat:long. Hint: Use the <code>paste</code> function to combine “lat” and “long” with <code>sep=&quot;:&quot;</code>. In the joining command, don’t forget to use the prefix <code>i.</code> for those two columns.</p></li>
 <li><p>Can you extract records where there was no match? Hint: the “latlong” column is NA for those records. Remove those records from <code>mypop</code>.</p></li>
-<li><p>Create a column “Tip” constructed as <code>paste0(City, &quot;: &quot;, Pop, &quot;, Gr: &quot;, Growth)</code>.</p></li>
-<li><p>Plot points on a map using:</p>
+<li><p>Now we neeed to create a column with the info that will be displayed when clicking on the city icons. Say we want to see the city name, population and growth. Thus, create a column “Tip” constructed as <code>paste0(City, &quot;: &quot;, Pop, &quot;, Gr: &quot;, Growth)</code>.</p></li>
+<li><p>Plot points on a google map using:</p>
 <pre class="r"><code>plot(gvisMap(mypop, &quot;latlong&quot;, &quot;City&quot;, tipvar = &quot;Tip&quot;, options = list(height = 800, width = 800)))</code></pre></li>
-<li><p>To combine a geo chart with a table on one page, you can use the following code:</p>
+<li><p>Another type of google chart is a Geo Chart. To combine such geo chart with the table created previously on one page, you can use the following code:</p>
 <pre class="r"><code>gchart &lt;- gvisGeoChart(mypop, &quot;latlong&quot;, hovervar = &quot;Tip&quot;, colorvar = &quot;Pop&quot;, 
         options = list(region=&quot;US-WA&quot;, resolution = &quot;metros&quot;, 
                        height = 800, width = 800))
