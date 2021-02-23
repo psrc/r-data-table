@@ -469,7 +469,7 @@ dtw <- dcast(dtl, ... ~ Year, value.var = "Population")
 head(dtw)
 ```
 
-# Export dataset
+# Exporting dataset
 As mentioned previously, the counterpart of the reading function `fread()` is the function `fwrite()`. It is the most efficient way to export data. Let's write out our `dtw` dataset:
 
 ```{r eval = FALSE}
