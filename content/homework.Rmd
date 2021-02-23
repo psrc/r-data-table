@@ -15,33 +15,49 @@ We will create tables of growth rates for counties and cities of the WA state, p
 dt <- fread("ofm_april1_population_final.csv")
 ```
 
-2. Extract all valid city records (i.e. where Filter is 4) and 3 columns, namely Jurisdiction and the two columns containing the 2018 and 2019 population. Store the object in `citypop`. Rename the 2018 column to "PopBase" and the 2019 column to "Pop".
+2. Extract all valid city records (i.e. where Filter is 4) and 3 columns, namely Jurisdiction and the two columns containing the 2018 and 2019 population. Store the object in `citypop`. Rename the 2018 column to "PopBase" and the 2019 column to "Pop". After this step, `dim(citypop)` should give 289 rows and 4 columns.
 
 3. Convert the PopBase and Pop columns into numeric type.
 
-4. Create a dataset `countypop` containing the sums of the PopBase and Pop columns by County. The aggregated columns should have the same names, namely PopBase and Pop.
+4. Create a dataset `countypop` containing the sums of the PopBase and Pop columns by County. The aggregated columns should have the same names, namely PopBase and Pop. After this step, you should see
+    ```{r eval = FALSE}
+head(countypop)
+    
+    County PopBase    Pop
+1:   Adams   10800  10880
+2:  Asotin    8480   8485
+3:  Benton  162020 165525
+4:  Chelan   45070  45310
+5: Clallam   30445  30950
+6:   Clark  257080 261610
+```
 
+    ```{r eval = FALSE}
+dim(countypop)
+
+[1] 39  3   
+```
 5. In `citypop`, create a column Growth as (Pop - PopBase)/PopBase * 100 rounded to 2 decimals. Do the same for `countypop`.
 
-5. In `citypop`, add two columns in one go (using the `':='()` syntax):
+6. In `citypop`, add two columns in one go (using the `':='()` syntax):
     i. Column Rank that ranks cities by Growth in decreasing order. Hint: Use the `frank()` function. Ranking in decreasing order can be achieved by passing negative values of the original column, here `Growth`. 
     ii. Column StateShare computed as the share of Pop within the state (as percentage).
     
-6. Do the same for `countypop`.
+7. Do the same for `countypop`.
 
-7. In `citypop`, add a column CountyShare computed as the share of Pop within its county (as percentage). Hint: For this you can join `citypop` and `countypop` using the `i` syntax. It should have the form (fill in `...`)
+8. In `citypop`, add a column CountyShare computed as the share of Pop within its county (as percentage). Hint: For this you can join `citypop` and `countypop` using the `i` syntax. It should have the form (fill in `...`)
     ```{r eval = FALSE}
 citypop[countypop, CountyShare := ..., on = ...]
 ```
 
-8. In `citypop`, create a column City which takes values of Jurisdiction but removes any text containing " (part)". Hint: For replacing text use the function `gsub(" (part)", "", Jurisdiction, fixed = TRUE)` on the `j` dimension (just assign that call to City). Remove the Jurisdiction column by chaining the removal right after the replacement. 
+9. In `citypop`, create a column City which takes values of Jurisdiction but removes any text containing " (part)". Hint: For replacing text use the function `gsub(" (part)", "", Jurisdiction, fixed = TRUE)` on the `j` dimension (just assign that call to City). Remove the Jurisdiction column by chaining the removal right after the replacement. 
 
-9. To move the City and County columns to the front of the dataset, use 
+10. To move the City and County columns to the front of the dataset, use 
     ```{r eval = FALSE}
 setcolorder(citypop, c("City", "County"))
 ```
 
-10. Create interactive (sortable) tables for cities and counties by 
+11. Create interactive (sortable) tables for cities and counties by 
 
     ```{r eval = FALSE}
 library(googleVis)
@@ -52,23 +68,36 @@ plot(gtbl.city)
 ```
     (Note that to view the tables there needs to be an internet access.)
 
-11. The file "citycenters.csv" provided with the class data contains the latitude and longitude of cities in WA, which we will need for the map. Read the file into R using `fread` and store it in an object called `cc`.
+12. The file "citycenters.csv" provided with the class data contains the latitude and longitude of cities in WA, which we will need for the map. Read the file into R using `fread` and store it in an object called `cc`.
 
-12. Rename the column "NAME" in the `cc` dataset to "City".
+13. Rename the column "NAME" in the `cc` dataset to "City".
 
-13. Join the datasets `citypop` and `cc` on the "City" column, so that columns "lat" and "long" appear as a new character column (called "latlong") of `citypop` in the form lat:long. Hint: Use the `paste` function to combine "lat" and "long" with `sep=":"`. In the joining command, don't forget to use the prefix `i.` for those two columns. 
+14. Join the datasets `citypop` and `cc` on the "City" column, so that columns "lat" and "long" appear as a new character column (called "latlong") of `citypop` in the form lat:long. Hint: Use the `paste` function to combine "lat" and "long" with `sep=":"`. In the joining command, don't forget to use the prefix `i.` for those two columns. After this step, you should see
 
-14. Can you extract records where there was no match? Hint: the "latlong" column is NA for those records. Remove those records from `citypop`.
+    ```{r eval = FALSE}
+head(citypop)
+    
+        City County PopBase  Pop Growth  Rank StateShare CountyShare                            latlong
+1:    Hatton  Adams     110  115   4.55  14.0       0.00        1.06 46.7747984582264:-118.828249712648
+2:      Lind  Adams     550  550   0.00 247.5       0.01        5.06 46.9718705700471:-118.615626494366
+3:   Othello  Adams    8270 8345   0.91 121.5       0.17       76.70 46.8262050796596:-119.175365734618
+4: Ritzville  Adams    1660 1660   0.00 247.5       0.03       15.26  47.127504898941:-118.379872032013
+5: Washtucna  Adams     210  210   0.00 247.5       0.00        1.93 46.7531092188871:-118.313575039108
+6:    Asotin Asotin    1275 1280   0.39 185.5       0.03       15.09 46.3400565321523:-117.051767869215
+```
 
-15. Now we neeed to create a column with the info that will be displayed when clicking on the city icons. Say we want to see the city name, population and growth. Thus, create a column "Tip" constructed via `paste0(City, ": ", Pop, ", Gr: ", Growth)`.
 
-16. Plot points on a google map using:
+15. Can you extract records where there was no match? Hint: the "latlong" column is NA for those records. Remove those records from `citypop`.
+
+16. Now we neeed to create a column with the info that will be displayed when clicking on the city icons. Say we want to see the city name, population and growth. Thus, create a column "Tip" constructed via `paste0(City, ": ", Pop, ", Gr: ", Growth)`.
+
+17. Plot points on a google map using:
     ```{r eval = FALSE}
 plot(gvisMap(mypop, "latlong", "City", tipvar = "Tip", 
              options = list(height = 800, width = 800)))
 ```
 
-17. Another types of google charts are a Geo Chart and a Pie Chart. To combine such charts with the tables created previously on one page, use the following code:
+18. Another types of google charts are a Geo Chart and a Pie Chart. To combine such charts with the tables created previously on one page, use the following code:
     ```{r eval = FALSE}
 gchart <- gvisGeoChart(mypop, "latlong", hovervar = "Tip", colorvar = "Pop", 
             options = list(region="US-WA", resolution = "metros", 

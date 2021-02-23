@@ -370,9 +370,21 @@ summary {
 <ol style="list-style-type: decimal">
 <li><p>Re-create the <code>dt</code> object from the class by reading in the OFM data. It contains population for all cities in WA.</p>
 <pre class="r"><code>dt &lt;- fread(&quot;ofm_april1_population_final.csv&quot;)</code></pre></li>
-<li><p>Extract all valid city records (i.e. where Filter is 4) and 3 columns, namely Jurisdiction and the two columns containing the 2018 and 2019 population. Store the object in <code>citypop</code>. Rename the 2018 column to “PopBase” and the 2019 column to “Pop”.</p></li>
+<li><p>Extract all valid city records (i.e. where Filter is 4) and 3 columns, namely Jurisdiction and the two columns containing the 2018 and 2019 population. Store the object in <code>citypop</code>. Rename the 2018 column to “PopBase” and the 2019 column to “Pop”. After this step, <code>dim(citypop)</code> should give 289 rows and 4 columns.</p></li>
 <li><p>Convert the PopBase and Pop columns into numeric type.</p></li>
-<li><p>Create a dataset <code>countypop</code> containing the sums of the PopBase and Pop columns by County. The aggregated columns should have the same names, namely PopBase and Pop.</p></li>
+<li><p>Create a dataset <code>countypop</code> containing the sums of the PopBase and Pop columns by County. The aggregated columns should have the same names, namely PopBase and Pop. After this step, you should see</p>
+<pre class="r"><code>head(countypop)
+
+County PopBase    Pop
+1:   Adams   10800  10880
+2:  Asotin    8480   8485
+3:  Benton  162020 165525
+4:  Chelan   45070  45310
+5: Clallam   30445  30950
+6:   Clark  257080 261610</code></pre>
+<pre class="r"><code>dim(countypop)
+
+[1] 39  3   </code></pre></li>
 <li><p>In <code>citypop</code>, create a column Growth as (Pop - PopBase)/PopBase * 100 rounded to 2 decimals. Do the same for <code>countypop</code>.</p></li>
 <li>In <code>citypop</code>, add two columns in one go (using the <code>':='()</code> syntax):
 <ol style="list-style-type: lower-roman">
@@ -394,7 +406,16 @@ plot(gtbl.city)</code></pre>
 <p>(Note that to view the tables there needs to be an internet access.)</p></li>
 <li><p>The file “citycenters.csv” provided with the class data contains the latitude and longitude of cities in WA, which we will need for the map. Read the file into R using <code>fread</code> and store it in an object called <code>cc</code>.</p></li>
 <li><p>Rename the column “NAME” in the <code>cc</code> dataset to “City”.</p></li>
-<li><p>Join the datasets <code>citypop</code> and <code>cc</code> on the “City” column, so that columns “lat” and “long” appear as a new character column (called “latlong”) of <code>citypop</code> in the form lat:long. Hint: Use the <code>paste</code> function to combine “lat” and “long” with <code>sep=&quot;:&quot;</code>. In the joining command, don’t forget to use the prefix <code>i.</code> for those two columns.</p></li>
+<li><p>Join the datasets <code>citypop</code> and <code>cc</code> on the “City” column, so that columns “lat” and “long” appear as a new character column (called “latlong”) of <code>citypop</code> in the form lat:long. Hint: Use the <code>paste</code> function to combine “lat” and “long” with <code>sep=&quot;:&quot;</code>. In the joining command, don’t forget to use the prefix <code>i.</code> for those two columns. After this step, you should see</p>
+<pre class="r"><code>head(citypop)
+
+    City County PopBase  Pop Growth  Rank StateShare CountyShare                            latlong
+1:    Hatton  Adams     110  115   4.55  14.0       0.00        1.06 46.7747984582264:-118.828249712648
+2:      Lind  Adams     550  550   0.00 247.5       0.01        5.06 46.9718705700471:-118.615626494366
+3:   Othello  Adams    8270 8345   0.91 121.5       0.17       76.70 46.8262050796596:-119.175365734618
+4: Ritzville  Adams    1660 1660   0.00 247.5       0.03       15.26  47.127504898941:-118.379872032013
+5: Washtucna  Adams     210  210   0.00 247.5       0.00        1.93 46.7531092188871:-118.313575039108
+6:    Asotin Asotin    1275 1280   0.39 185.5       0.03       15.09 46.3400565321523:-117.051767869215</code></pre></li>
 <li><p>Can you extract records where there was no match? Hint: the “latlong” column is NA for those records. Remove those records from <code>citypop</code>.</p></li>
 <li><p>Now we neeed to create a column with the info that will be displayed when clicking on the city icons. Say we want to see the city name, population and growth. Thus, create a column “Tip” constructed via <code>paste0(City, &quot;: &quot;, Pop, &quot;, Gr: &quot;, Growth)</code>.</p></li>
 <li><p>Plot points on a google map using:</p>
