@@ -16,6 +16,8 @@ options(datatable.print.trunc.cols = TRUE)
 show.results <- FALSE
 ```
 
+[Back to class overview](../index.html)
+
 # Motivation
 
 <div class='float-image-right'>
