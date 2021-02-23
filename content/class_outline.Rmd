@@ -17,7 +17,7 @@ show.results <- FALSE
 ```
 
 [Back to class overview](../index.html)<br/>
-[R Script from this class](https://github.com/psrc/r-data-table/content/class_outline_script.R)
+[R script from this class](http://aws-linux/rworkshop2020/data-table/class_outline_script.R)
 
 # Motivation
 
