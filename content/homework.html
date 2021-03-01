@@ -370,7 +370,7 @@ summary {
 <ol style="list-style-type: decimal">
 <li><p>Re-create the <code>dt</code> object from the class by reading in the OFM data. It contains population for all cities in WA.</p>
 <pre class="r"><code>dt &lt;- fread(&quot;ofm_april1_population_final.csv&quot;)</code></pre></li>
-<li><p>Extract all valid city records (i.e. where Filter is 4) and 3 columns, namely Jurisdiction and the two columns containing the 2018 and 2019 population. Store the object in <code>citypop</code>. Rename the 2018 column to “PopBase” and the 2019 column to “Pop”. After this step, <code>dim(citypop)</code> should give 289 rows and 4 columns.</p></li>
+<li><p>Extract all valid city records (i.e. where Filter is 4) and 4 columns, namely County, Jurisdiction and the two columns containing the 2018 and 2019 population. Store the object in <code>citypop</code>. Rename the 2018 column to “PopBase” and the 2019 column to “Pop”. After this step, <code>dim(citypop)</code> should give 289 rows and 4 columns.</p></li>
 <li><p>Convert the PopBase and Pop columns into numeric type.</p></li>
 <li><p>Create a dataset <code>countypop</code> containing the sums of the PopBase and Pop columns by County. The aggregated columns should have the same names, namely PopBase and Pop. After this step, you should see</p>
 <pre class="r"><code>head(countypop)
