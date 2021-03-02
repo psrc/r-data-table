@@ -93,13 +93,13 @@ head(citypop)
 
 17. Plot points on a google map using:
     ```{r eval = FALSE}
-plot(gvisMap(mypop, "latlong", "City", tipvar = "Tip", 
+plot(gvisMap(citypop, "latlong", "City", tipvar = "Tip", 
              options = list(height = 800, width = 800)))
 ```
 
 18. Another types of google charts are a Geo Chart and a Pie Chart. To combine such charts with the tables created previously on one page, use the following code:
     ```{r eval = FALSE}
-gchart <- gvisGeoChart(mypop, "latlong", hovervar = "Tip", colorvar = "Pop", 
+gchart <- gvisGeoChart(citypop, "latlong", hovervar = "Tip", colorvar = "Pop", 
             options = list(region="US-WA", resolution = "metros", 
                            height = 800, width = 800))
 gpiechart <- gvisPieChart(countypop[, .(County, StateShare)], 

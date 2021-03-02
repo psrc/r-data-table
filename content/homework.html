@@ -419,10 +419,10 @@ plot(gtbl.city)</code></pre>
 <li><p>Can you extract records where there was no match? Hint: the “latlong” column is NA for those records. Remove those records from <code>citypop</code>.</p></li>
 <li><p>Now we neeed to create a column with the info that will be displayed when clicking on the city icons. Say we want to see the city name, population and growth. Thus, create a column “Tip” constructed via <code>paste0(City, &quot;: &quot;, Pop, &quot;, Gr: &quot;, Growth)</code>.</p></li>
 <li><p>Plot points on a google map using:</p>
-<pre class="r"><code>plot(gvisMap(mypop, &quot;latlong&quot;, &quot;City&quot;, tipvar = &quot;Tip&quot;, 
+<pre class="r"><code>plot(gvisMap(citypop, &quot;latlong&quot;, &quot;City&quot;, tipvar = &quot;Tip&quot;, 
          options = list(height = 800, width = 800)))</code></pre></li>
 <li><p>Another types of google charts are a Geo Chart and a Pie Chart. To combine such charts with the tables created previously on one page, use the following code:</p>
-<pre class="r"><code>gchart &lt;- gvisGeoChart(mypop, &quot;latlong&quot;, hovervar = &quot;Tip&quot;, colorvar = &quot;Pop&quot;, 
+<pre class="r"><code>gchart &lt;- gvisGeoChart(citypop, &quot;latlong&quot;, hovervar = &quot;Tip&quot;, colorvar = &quot;Pop&quot;, 
         options = list(region=&quot;US-WA&quot;, resolution = &quot;metros&quot;, 
                        height = 800, width = 800))
 gpiechart &lt;- gvisPieChart(countypop[, .(County, StateShare)], 
